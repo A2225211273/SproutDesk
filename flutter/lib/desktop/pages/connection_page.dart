@@ -350,7 +350,7 @@ class _ConnectionPageState extends State<ConnectionPage>
   /// Search for a peer.
   Widget _buildRemoteIDTextField(BuildContext context) {
     var w = Container(
-      width: 320 + 20 * 2,
+      width: (widget.compact ? 280 : 320) + 20 * 2,
       padding: widget.compact
           ? const EdgeInsets.fromLTRB(20, 8, 20, 8)
           : const EdgeInsets.fromLTRB(20, 24, 20, 22),

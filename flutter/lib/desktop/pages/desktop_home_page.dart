@@ -202,7 +202,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                 context,
                 title: 'Let others help me',
                 tip: 'help_me_tip',
-                width: 300,
+                width: 260,
                 child: ChangeNotifierProvider.value(
                   value: gFFI.serverModel,
                   child: Column(
@@ -217,7 +217,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                 context,
                 title: 'Help others',
                 tip: 'help_others_tip',
-                width: 360,
+                width: 320,
                 child: const ConnectionPage(compact: true),
               ),
             ],

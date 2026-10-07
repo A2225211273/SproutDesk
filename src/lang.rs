@@ -134,6 +134,10 @@ fn resolve_lang(saved_lang: &str, locale: &str, cjk_fallback: bool) -> String {
     if cjk_fallback && is_cjk_lang(&lang) {
         return "en".to_owned();
     }
+    // SproutDesk is Chinese-first: default to Simplified Chinese until the user picks a language.
+    if lang.is_empty() && !cjk_fallback {
+        lang = "zh-cn".to_owned();
+    }
     if lang.is_empty() {
         // zh_CN on Linux, zh-Hans-CN on mac, zh_CN_#Hans on Android
         if locale.starts_with("zh") {
