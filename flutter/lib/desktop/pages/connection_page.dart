@@ -189,7 +189,10 @@ class _OnlineStatusWidgetState extends State<OnlineStatusWidget> {
 
 /// Connection page for connecting to a remote peer.
 class ConnectionPage extends StatefulWidget {
-  const ConnectionPage({Key? key}) : super(key: key);
+  /// Only the ID input and connect buttons, for embedding in a home card.
+  final bool compact;
+
+  const ConnectionPage({Key? key, this.compact = false}) : super(key: key);
 
   @override
   State<ConnectionPage> createState() => _ConnectionPageState();
@@ -303,6 +306,9 @@ class _ConnectionPageState extends State<ConnectionPage>
 
   @override
   Widget build(BuildContext context) {
+    if (widget.compact) {
+      return _buildRemoteIDTextField(context);
+    }
     final isOutgoingOnly = bind.isOutgoingOnly();
     return Column(
       children: [
@@ -345,14 +351,20 @@ class _ConnectionPageState extends State<ConnectionPage>
   Widget _buildRemoteIDTextField(BuildContext context) {
     var w = Container(
       width: 320 + 20 * 2,
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 22),
-      decoration: BoxDecoration(
-          borderRadius: const BorderRadius.all(Radius.circular(13)),
-          border: Border.all(color: Theme.of(context).colorScheme.background)),
+      padding: widget.compact
+          ? const EdgeInsets.fromLTRB(20, 8, 20, 8)
+          : const EdgeInsets.fromLTRB(20, 24, 20, 22),
+      decoration: widget.compact
+          ? null
+          : BoxDecoration(
+              borderRadius: const BorderRadius.all(Radius.circular(13)),
+              border:
+                  Border.all(color: Theme.of(context).colorScheme.background)),
       child: Ink(
         child: Column(
           children: [
-            getConnectionPageTitle(context, false).marginOnly(bottom: 15),
+            if (!widget.compact)
+              getConnectionPageTitle(context, false).marginOnly(bottom: 15),
             Row(
               children: [
                 Expanded(

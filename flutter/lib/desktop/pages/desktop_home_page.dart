@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_hbb/common.dart';
 import 'package:flutter_hbb/common/widgets/animated_rotation_widget.dart';
 import 'package:flutter_hbb/common/widgets/custom_password.dart';
+import 'package:flutter_hbb/common/widgets/peer_tab_page.dart';
 import 'package:flutter_hbb/consts.dart';
 import 'package:flutter_hbb/desktop/pages/connection_page.dart';
 import 'package:flutter_hbb/desktop/pages/desktop_setting_page.dart';
@@ -55,10 +56,15 @@ class _DesktopHomePageState extends State<DesktopHomePage>
 
   final GlobalKey _childKey = GlobalKey();
 
+  final RxInt _navIndex = 0.obs;
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
     final isIncomingOnly = bind.isIncomingOnly();
+    if (!isIncomingOnly && !bind.isOutgoingOnly()) {
+      return _buildBlock(child: _buildSproutHome(context));
+    }
     return _buildBlock(
         child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -73,6 +79,193 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   Widget _buildBlock({required Widget child}) {
     return buildRemoteBlock(
         block: _block, mask: true, use: canBeBlocked, child: child);
+  }
+
+  Widget _buildSproutHome(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSideNav(context),
+        const VerticalDivider(width: 1),
+        Expanded(
+          child: Container(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            child: Column(
+              children: [
+                Expanded(
+                  child: Obx(() => IndexedStack(
+                        index: _navIndex.value,
+                        children: [
+                          _buildAssistPane(context),
+                          _buildDevicesPane(context),
+                        ],
+                      )),
+                ),
+                const Divider(height: 1),
+                const OnlineStatusWidget(),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSideNav(BuildContext context) {
+    return Container(
+      width: 148,
+      color: Theme.of(context).colorScheme.background,
+      padding: const EdgeInsets.fromLTRB(10, 16, 10, 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              loadIcon(26),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  bind.mainGetAppNameSync(),
+                  style: const TextStyle(
+                      fontSize: 15, fontWeight: FontWeight.w600),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ).marginOnly(left: 4, bottom: 20),
+          _buildNavItem(context, Icons.support_agent_outlined,
+              'Remote assistance', 0),
+          _buildNavItem(context, Icons.devices_outlined, 'My devices', 1),
+          if (!bind.isDisableSettings())
+            _buildNavTile(context, Icons.settings_outlined, 'Settings', false,
+                () => DesktopTabPage.onAddSetting()),
+          const Spacer(),
+          if (bind.isCustomClient())
+            Align(alignment: Alignment.center, child: loadPowered(context)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNavItem(
+      BuildContext context, IconData icon, String label, int index) {
+    return Obx(() => _buildNavTile(context, icon, label,
+        _navIndex.value == index, () => _navIndex.value = index));
+  }
+
+  Widget _buildNavTile(BuildContext context, IconData icon, String label,
+      bool selected, VoidCallback onTap) {
+    final textColor = Theme.of(context).textTheme.titleLarge?.color;
+    final color = selected ? MyTheme.accent : textColor?.withOpacity(0.75);
+    return Material(
+      color: selected ? MyTheme.accent.withOpacity(0.12) : Colors.transparent,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+          child: Row(
+            children: [
+              Icon(icon, size: 18, color: color),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  translate(label),
+                  style: TextStyle(fontSize: 13, color: color),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ).marginOnly(bottom: 4);
+  }
+
+  Widget _buildAssistPane(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(translate('Remote assistance'),
+              style: Theme.of(context).textTheme.titleLarge),
+          buildPresetPasswordWarning(),
+          Obx(() => buildHelpCards(stateGlobal.updateUrl.value)),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              _buildHomeCard(
+                context,
+                title: 'Let others help me',
+                tip: 'help_me_tip',
+                width: 300,
+                child: ChangeNotifierProvider.value(
+                  value: gFFI.serverModel,
+                  child: Column(
+                    children: [
+                      buildIDBoard(context),
+                      buildPasswordBoard(context),
+                    ],
+                  ),
+                ),
+              ),
+              _buildHomeCard(
+                context,
+                title: 'Help others',
+                tip: 'help_others_tip',
+                width: 360,
+                child: const ConnectionPage(compact: true),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHomeCard(BuildContext context,
+      {required String title,
+      required String tip,
+      required double width,
+      required Widget child}) {
+    return Container(
+      width: width,
+      padding: const EdgeInsets.only(top: 16, bottom: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Theme.of(context).dividerColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            translate(title),
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+          ).marginOnly(left: 20, right: 16),
+          Text(
+            translate(tip),
+            style: Theme.of(context).textTheme.bodySmall,
+          ).marginOnly(left: 20, right: 16, top: 4, bottom: 8),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDevicesPane(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(translate('My devices'),
+                style: Theme.of(context).textTheme.titleLarge)
+            .marginOnly(left: 24, top: 20, bottom: 8),
+        const Expanded(child: PeerTabPage()),
+      ],
+    );
   }
 
   Widget buildLeftPane(BuildContext context) {
@@ -608,8 +801,8 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
                 colors: [
-                  Color.fromARGB(255, 226, 66, 188),
-                  Color.fromARGB(255, 244, 114, 124),
+                  Color(0xFF0F6E56),
+                  Color(0xFF1D9E75),
                 ],
               )),
               padding: EdgeInsets.all(20),
